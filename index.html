@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周易六爻 · 问心卜卦</title>
+<style>
+:root {
+  --paper: #F5EBD8;
+  --ink: #1A1A1A;
+  --red: #A93226;
+  --gold: #B8860B;
+  --light-ink: #4A4A4A;
+  --shadow: rgba(26,26,26,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: "STSong", "SimSun", "宋体", serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 水墨背景纹理 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(180,160,120,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(160,140,100,0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(200,180,140,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 云雾飘动 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 30% at 10% 20%, rgba(255,255,255,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 25% at 90% 80%, rgba(255,255,255,0.20) 0%, transparent 60%);
+  animation: cloudDrift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes cloudDrift {
+  0%   { transform: translateX(0) translateY(0); opacity: 0.6; }
+  50%  { transform: translateX(30px) translateY(-15px); opacity: 0.9; }
+  100% { transform: translateX(-20px) translateY(10px); opacity: 0.6; }
+}
+
+.page {
+  display: none;
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 40px 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.page.active { display: flex; }
+
+/* ===== 页眉装饰 ===== */
+.site-title {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: clamp(24px, 5vw, 42px);
+  color: var(--ink);
+  letter-spacing: 6px;
+  text-align: center;
+  position: relative;
+}
+.site-title::before,
+.site-title::after {
+  content: '❧';
+  color: var(--gold);
+  font-size: 0.6em;
+  margin: 0 12px;
+}
+.subtitle {
+  font-size: 13px;
+  color: var(--light-ink);
+  letter-spacing: 3px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* 分隔线 */
+.divider {
+  width: 240px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  margin: 20px auto;
+}
+
+/* ===== 卷轴输入框 ===== */
+.scroll-wrap {
+  position: relative;
+  width: min(520px, 92vw);
+  margin: 30px auto;
+}
+.scroll-top, .scroll-bottom {
+  height: 18px;
+  background: linear-gradient(to right, #8B6914, #D4A843, #8B6914);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.scroll-body {
+  background: linear-gradient(135deg, #FAECD6 0%, #F0DDB8 50%, #FAECD6 100%);
+  border-left: 6px solid #C49A2A;
+  border-right: 6px solid #C49A2A;
+  padding: 24px 28px;
+  box-shadow: inset 0 0 20px rgba(180,140,60,0.12);
+}
+.scroll-body textarea {
+  width: 100%;
+  min-height: 110px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: 16px;
+  color: var(--ink);
+  line-height: 2;
+  letter-spacing: 1px;
+}
+.scroll-body textarea::placeholder {
+  color: #B09070;
+  font-style: italic;
+}
+
+/* ===== 按钮 ===== */
+.btn-main {
+  display: block;
+  margin: 0 auto;
+  padding: 12px 48px;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: #FFF5E0;
+  background: linear-gradient(135deg, var(--red) 0%, #8B1A10 100%);
+  border: 2px solid #7A1508;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(169,50,38,0.35);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-main::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  transition: width 0.4s, height 0.4s, opacity 0.4s;
+  opacity: 0;
+}
+.btn-main:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(169,50,38,0.45); }
+.btn-main:active:not(:disabled)::after { width: 200px; height: 200px; opacity: 0; }
+.btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  padding: 10px 36px;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+.btn-secondary:hover { background: var(--gold); color: #FFF5E0; transform: translateY(-1px); }
+
+/* ===== 阶段二：摇卦 ===== */
+#page-toss { gap: 24px; }
+
+.toss-header { text-align: center; }
+.toss-header h2 {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: clamp(18px, 4vw, 28px);
+  letter-spacing: 4px;
+}
+.toss-counter {
+  font-size: 13px;
+  color: var(--light-ink);
+  letter-spacing: 2px;
+  margin-top: 6px;
+}
+
+/* 铜钱区 */
+.coins-area {
+  display: flex;
+  gap: clamp(16px, 4vw, 36px);
+  justify-content: center;
+  align-items: center;
+  perspective: 600px;
+  cursor: pointer;
+  padding: 20px;
+}
+
+.coin-wrap {
+  perspective: 400px;
+}
+.coin {
+  width: clamp(72px, 14vw, 100px);
+  height: clamp(72px, 14vw, 100px);
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  cursor: pointer;
+}
+.coin.spinning {
+  animation: coinSpin 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+}
+@keyframes coinSpin {
+  0%   { transform: rotateY(0deg) rotateX(10deg); }
+  30%  { transform: rotateY(540deg) rotateX(-15deg); }
+  70%  { transform: rotateY(1080deg) rotateX(8deg); }
+  100% { transform: rotateY(var(--final-rotate, 1440deg)) rotateX(0deg); }
+}
+
+.coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.coin-front {
+  background: radial-gradient(circle at 35% 35%, #E8C060, #B8860B 50%, #8B6400);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 3px 10px rgba(0,0,0,0.25);
+}
+.coin-back {
+  background: radial-gradient(circle at 35% 35%, #D4A840, #9A6E00 50%, #7A5200);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 3px 10px rgba(0,0,0,0.25);
+  transform: rotateY(180deg);
+}
+
+/* 爻线记录区 */
+.yao-log {
+  width: min(420px, 92vw);
+  background: rgba(245,235,216,0.8);
+  border: 1px solid rgba(184,134,11,0.3);
+  border-radius: 6px;
+  padding: 16px 20px;
+  min-height: 180px;
+}
+.yao-log-title {
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(184,134,11,0.2);
+  padding-bottom: 8px;
+}
+.yao-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  opacity: 0;
+  animation: fadeInYao 0.6s ease forwards;
+  border-bottom: 1px dashed rgba(184,134,11,0.15);
+}
+.yao-item:last-child { border-bottom: none; }
+@keyframes fadeInYao {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.yao-name {
+  font-size: 12px;
+  color: var(--light-ink);
+  min-width: 36px;
+  letter-spacing: 1px;
+}
+.coin-dots {
+  display: flex;
+  gap: 5px;
+}
+.coin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: var(--gold);
+}
+.coin-dot.heads { background: rgba(184,134,11,0.2); }
+.yao-type {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: 13px;
+  color: var(--red);
+  min-width: 44px;
+}
+.yao-line-preview {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* 过渡动画 */
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ink);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.transition-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.transition-text {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: 24px;
+  color: var(--gold);
+  letter-spacing: 6px;
+  animation: inkPulse 1s ease-in-out infinite;
+}
+@keyframes inkPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1; transform: scale(1.05); }
+}
+
+/* ===== 阶段三：结果页 ===== */
+#page-result { gap: 28px; max-width: 800px; margin: 0 auto; width: 100%; }
+
+.result-question {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: clamp(14px, 3vw, 18px);
+  color: var(--light-ink);
+  text-align: center;
+  letter-spacing: 2px;
+  line-height: 1.8;
+}
+.result-question span {
+  color: var(--red);
+  font-size: 1.2em;
+}
+
+/* 卦象展示 */
+.hexagrams-row {
+  display: flex;
+  gap: clamp(20px, 5vw, 60px);
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.hexagram-card {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 140px;
+}
+.hexagram-label {
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+.hexagram-lines {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.yao-line-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.yao-line-glyph {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  opacity: 0;
+  animation: inkReveal 0.8s ease forwards;
+}
+@keyframes inkReveal {
+  0%   { opacity: 0; filter: blur(4px); transform: scaleX(0.7); }
+  60%  { opacity: 0.8; filter: blur(1px); }
+  100% { opacity: 1; filter: blur(0); transform: scaleX(1); }
+}
+.line-solid {
+  width: 72px;
+  height: 5px;
+  background: var(--ink);
+  border-radius: 2px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+}
+.line-broken-left, .line-broken-right {
+  width: 30px;
+  height: 5px;
+  background: var(--ink);
+  border-radius: 2px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+}
+.moving-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 5px var(--red);
+  flex-shrink: 0;
+}
+
+.hexagram-name {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: clamp(16px, 3.5vw, 22px);
+  color: var(--ink);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.hexagram-trigrams {
+  font-size: 12px;
+  color: var(--light-ink);
+  letter-spacing: 1px;
+}
+
+/* 卦辞区 */
+.gua-text-section {
+  width: 100%;
+  max-width: 640px;
+  background: linear-gradient(135deg, #FAECD6 0%, #F0DDB8 100%);
+  border: 1px solid rgba(184,134,11,0.4);
+  border-radius: 6px;
+  padding: clamp(20px, 4vw, 36px);
+  box-shadow: 0 4px 16px var(--shadow);
+  position: relative;
+}
+.gua-text-section::before {
+  content: '☯';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 10px;
+  color: var(--gold);
+  font-size: 20px;
+}
+.gua-classical {
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  font-size: clamp(14px, 2.8vw, 17px);
+  line-height: 2.2;
+  color: var(--ink);
+  letter-spacing: 2px;
+  border-left: 3px solid var(--gold);
+  padding-left: 14px;
+  margin-bottom: 16px;
+}
+.gua-modern {
+  font-size: clamp(13px, 2.5vw, 15px);
+  line-height: 1.9;
+  color: var(--light-ink);
+  letter-spacing: 1px;
+}
+.gua-section-title {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 480px) {
+  .page { padding: 24px 14px; }
+  .hexagrams-row { gap: 16px; }
+  .line-solid { width: 56px; }
+  .line-broken-left, .line-broken-right { width: 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 过渡遮罩 -->
+<div class="transition-overlay" id="transitionOverlay">
+  <div class="transition-text">卦象凝聚…</div>
+</div>
+
+<!-- ===== 阶段一：问卦 ===== -->
+<div class="page active" id="page-question">
+  <h1 class="site-title">周易六爻 · 问心卜卦</h1>
+  <p class="subtitle">心诚则灵，一事一占</p>
+  <div class="divider"></div>
+
+  <div class="scroll-wrap">
+    <div class="scroll-top"></div>
+    <div class="scroll-body">
+      <textarea id="questionInput" placeholder="请默念心中所问之事…" maxlength="200"></textarea>
+    </div>
+    <div class="scroll-bottom"></div>
+  </div>
+
+  <button class="btn-main" id="btnStart" disabled onclick="startDivination()">起　卦</button>
+
+  <p style="margin-top:30px; font-size:12px; color:#B09070; letter-spacing:2px; text-align:center;">
+    天地万物皆有卜，心诚意正见吉凶
+  </p>
+</div>
+
+<!-- ===== 阶段二：摇卦 ===== -->
+<div class="page" id="page-toss">
+  <div class="toss-header">
+    <h2>摇　卦</h2>
+    <p class="toss-counter" id="tossCounter">第一爻 · 点击铜钱或按钮起卦</p>
+  </div>
+  <div class="divider"></div>
+
+  <div class="coins-area" id="coinsArea" onclick="tossCoins()">
+    <div class="coin-wrap"><div class="coin" id="coin0">
+      <div class="coin-face coin-front">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#7A5200" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#7A5200" stroke-width="1.5"/>
+          <text x="50" y="30" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">乾</text>
+          <text x="50" y="72" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">隆</text>
+          <text x="26" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">通</text>
+          <text x="74" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">寶</text>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#7A5200" font-family="STKaiti,KaiTi,serif" font-weight="bold">字</text>
+        </svg>
+      </div>
+      <div class="coin-face coin-back">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#5A3800" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#5A3800" stroke-width="1.5"/>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#5A3800" font-family="STKaiti,KaiTi,serif" font-weight="bold">背</text>
+        </svg>
+      </div>
+    </div></div>
+
+    <div class="coin-wrap"><div class="coin" id="coin1">
+      <div class="coin-face coin-front">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#7A5200" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#7A5200" stroke-width="1.5"/>
+          <text x="50" y="30" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">嘉</text>
+          <text x="50" y="72" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">慶</text>
+          <text x="26" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">通</text>
+          <text x="74" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">寶</text>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#7A5200" font-family="STKaiti,KaiTi,serif" font-weight="bold">字</text>
+        </svg>
+      </div>
+      <div class="coin-face coin-back">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#5A3800" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#5A3800" stroke-width="1.5"/>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#5A3800" font-family="STKaiti,KaiTi,serif" font-weight="bold">背</text>
+        </svg>
+      </div>
+    </div></div>
+
+    <div class="coin-wrap"><div class="coin" id="coin2">
+      <div class="coin-face coin-front">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#7A5200" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#7A5200" stroke-width="1.5"/>
+          <text x="50" y="30" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">道</text>
+          <text x="50" y="72" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">光</text>
+          <text x="26" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">通</text>
+          <text x="74" y="54" text-anchor="middle" font-size="9" fill="#5A3800" font-family="STSong,SimSun,serif">寶</text>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#7A5200" font-family="STKaiti,KaiTi,serif" font-weight="bold">字</text>
+        </svg>
+      </div>
+      <div class="coin-face coin-back">
+        <svg width="100%" height="100%" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="#5A3800" stroke-width="2"/>
+          <rect x="38" y="38" width="24" height="24" fill="none" stroke="#5A3800" stroke-width="1.5"/>
+          <text x="50" y="54" text-anchor="middle" font-size="10" fill="#5A3800" font-family="STKaiti,KaiTi,serif" font-weight="bold">背</text>
+        </svg>
+      </div>
+    </div></div>
+  </div>
+
+  <button class="btn-main" id="btnToss" onclick="tossCoins()">摇　卦</button>
+
+  <div class="yao-log">
+    <div class="yao-log-title">— 爻　象　记　录 —</div>
+    <div id="yaoLogBody"></div>
+  </div>
+</div>
+
+<!-- ===== 阶段三：结果 ===== -->
+<div class="page" id="page-result">
+  <h1 class="site-title" style="font-size:clamp(20px,4vw,32px)">卦　象　已　成</h1>
+  <div class="divider"></div>
+
+  <p class="result-question" id="resultQuestion"></p>
+
+  <div class="hexagrams-row" id="hexagramsRow"></div>
+
+  <div class="gua-text-section" id="guaTextSection"></div>
+
+  <button class="btn-secondary" onclick="resetAll()">再　卜　一　卦</button>
+</div>
+
+<script>
+// ============================================================
+// 64 卦数据
+// key: 六爻二进制字符串，位置 0-2 = 上卦（高位），位置 3-5 = 下卦（低位）
+// 1=阳，0=阴
+// 八卦：乾=111, 兑=011, 离=101, 震=001, 巽=110, 坎=010, 艮=100, 坤=000
+// ============================================================
+const TRIGRAMS = {
+  "111": { name: "乾", symbol: "☰", meaning: "天" },
+  "011": { name: "兑", symbol: "☱", meaning: "泽" },
+  "101": { name: "离", symbol: "☲", meaning: "火" },
+  "001": { name: "震", symbol: "☳", meaning: "雷" },
+  "110": { name: "巽", symbol: "☴", meaning: "风" },
+  "010": { name: "坎", symbol: "☵", meaning: "水" },
+  "100": { name: "艮", symbol: "☶", meaning: "山" },
+  "000": { name: "坤", symbol: "☷", meaning: "地" }
+};
+
+const HEXAGRAMS = {
+  "111111": { name: "乾为天", classical: "元亨利贞。天行健，君子以自强不息。", modern: "此卦纯阳至刚，象征创始之力。事业方面宜积极进取，勇于开拓；感情方面宜主动表达，诚意感人；决策方面刚健果断，时机已至，可大胆行动。" },
+  "000000": { name: "坤为地", classical: "元亨，利牝马之贞。地势坤，君子以厚德载物。", modern: "此卦纯阴至柔，象征承载包容之德。凡事宜以柔克刚、静待时机；感情方面以包容之心待人；决策方面不宜冒进，顺势而为方为上策。" },
+  "010001": { name: "水雷屯", classical: "元亨利贞，勿用有攸往，利建侯。云雷屯，君子以经纶。", modern: "万物初生，艰难困苦在所难免。事业正处起步阶段，宜稳扎稳打；感情方面虽有波折，坚持必有回报；决策需谨慎，打好基础再图进取。" },
+  "100010": { name: "山水蒙", classical: "亨，匪我求童蒙，童蒙求我。山下出泉，蒙，君子以果行育德。", modern: "蒙昧待启，宜虚心求教。事业方面应多向前辈学习，切勿自以为是；感情方面诚实坦率，莫耍小聪明；决策时广泛咨询，集思广益。" },
+  "010111": { name: "水天需", classical: "有孚，光亨，贞吉。利涉大川。云上于天，需，君子以饮食宴乐。", modern: "守候等待，时机自来。事业方面不宜急进，充实自身以待机遇；感情方面耐心经营，真情终将被看见；决策方面静观其变，蓄势待发。" },
+  "111010": { name: "天水讼", classical: "有孚，窒，惕，中吉，终凶。利见大人，不利涉大川。", modern: "纷争已起，宜和解而非对抗。事业方面避免与人正面冲突，求同存异；感情方面切莫意气用事，冷静沟通化解矛盾；决策须留余地。" },
+  "000010": { name: "地水师", classical: "贞，丈人，吉，无咎。地中有水，师，君子以容民畜众。", modern: "统帅之象，宜以德服众。事业方面注重团队协作，统筹全局；感情方面以诚信为本，承担责任；决策方面需有长远规划，方能成大事。" },
+  "010000": { name: "水地比", classical: "吉。原筮，元永贞，无咎。地上有水，比，先王以建万国，亲诸侯。", modern: "亲密结合，守望相助。事业方面广结善缘，合作共赢；感情方面坦诚相待，互相扶持；决策时善用人脉资源，众志成城。" },
+  "110111": { name: "风天小畜", classical: "亨，密云不雨，自我西郊。风行天上，小畜，君子以懿文德。", modern: "积小力而成大事，蓄势待发之时。事业方面积累实力，厚积薄发；感情方面用心经营细节，细水长流；决策时稳中求进，时机未至勿轻举妄动。" },
+  "111011": { name: "天泽履", classical: "履虎尾，不咥人，亨。上天下泽，履，君子以辨上下，定民志。", modern: "踩虎尾而不被咬，行事须谨慎有礼。事业方面恪守本分，礼仪周全；感情方面进退有度，不可逾矩；决策时谨慎小心，步步为营。" },
+  "000111": { name: "地天泰", classical: "小往大来，吉亨。天地交，泰，后以财成天地之道。", modern: "天地交泰，万事亨通。此乃大吉之卦，事业蒸蒸日上，贵人相助；感情方面和谐美满，喜事将至；决策顺势而为，诸事皆宜。" },
+  "111000": { name: "天地否", classical: "否之匪人，不利君子贞，大往小来。天地不交，否，君子以俭德辟难。", modern: "天地不交，阴阳阻隔。事业方面遭遇瓶颈，宜韬光养晦；感情方面沟通受阻，需要耐心疏通；决策时静观其变，等待转机。" },
+  "111101": { name: "天火同人", classical: "同人于野，亨，利涉大川，利君子贞。天与火，同人，君子以类族辨物。", modern: "志同道合，众人一心。事业方面广结同道，携手共进；感情方面寻觅心灵契合之人；决策时集众人之力，合则两利。" },
+  "101111": { name: "火天大有", classical: "元亨。火在天上，大有，君子以遏恶扬善，顺天休命。", modern: "大丰收之象，事业如日中天。事业财运皆旺，宜把握机遇大展身手；感情方面光明正大，喜事连连；决策大胆实施，功成在即。" },
+  "000100": { name: "地山谦", classical: "亨，君子有终。地中有山，谦，君子以裒多益寡，称物平施。", modern: "谦逊处世，无往不利。事业方面虚怀若谷，以谦待人必获众望；感情方面不骄不躁，真诚动人；决策时低调行事，谦让得福。" },
+  "001000": { name: "雷地豫", classical: "利建侯行师。雷出地奋，豫，先王以作乐崇德，殷荐之上帝。", modern: "欢乐和顺，顺势而动。事业方面充满活力，大展宏图之时；感情方面喜气洋洋，感情顺遂；决策时当机立断，顺势而为大吉。" },
+  "011001": { name: "泽雷随", classical: "元亨利贞，无咎。泽中有雷，随，君子以向晦入宴息。", modern: "随时顺势，与时俱进。事业方面顺应潮流，灵活应变；感情方面随缘而动，不强求；决策时因时制宜，随机应变。" },
+  "100110": { name: "山风蛊", classical: "元亨，利涉大川。先甲三日，后甲三日。山下有风，蛊，君子以振民育德。", modern: "积弊待除，革故鼎新。事业方面正视问题，大胆改革；感情方面解决积累的矛盾，重焕新机；决策需魄力，破旧立新。" },
+  "000011": { name: "地泽临", classical: "元亨利贞，至于八月有凶。泽上有地，临，君子以教思无穷，容保民无疆。", modern: "居高临下，德化万民。事业方面掌握主动，施展才华；感情方面以宽厚之心待人，关爱有加；决策时把握先机，主动出击。" },
+  "110000": { name: "风地观", classical: "盥而不荐，有孚颙若。风行地上，观，先王以省方观民设教。", modern: "冷静观察，洞察先机。事业方面宜旁观者清，全局审视；感情方面仔细观察对方，了解真实心意；决策时多看多想，谋定后动。" },
+  "101001": { name: "火雷噬嗑", classical: "亨，利用狱。雷电，噬嗑，先王以明罚敕法。", modern: "须除障碍方能通达。事业方面扫除阻力，果断处置；感情方面化解隔阂，真诚沟通；决策时须有魄力，去除阻碍。" },
+  "100101": { name: "山火贲", classical: "亨，小利有攸往。山下有火，贲，君子以明庶政，无敢折狱。", modern: "文饰之美，表里相符。事业方面注重形象与品质，内外兼修；感情方面用心装扮，展现魅力；决策时注重细节，锦上添花。" },
+  "100000": { name: "山地剥", classical: "不利有攸往。山附于地，剥，上以厚下安宅。", modern: "剥落之象，宜守不宜攻。事业方面宜保守待机，防守为主；感情方面基础动摇，需重建信任；决策时勿冒进，以退为进。" },
+  "000001": { name: "地雷复", classical: "亨。出入无疾，朋来无咎。反复其道，七日来复，利有攸往。", modern: "阳气来复，否极泰来。事业方面触底反弹，新的开始；感情方面破镜重圆，重获新生；决策时抓住转机，重整旗鼓。" },
+  "111001": { name: "天雷无妄", classical: "元亨利贞，其匪正有眚，不利有攸往。天下雷行，物与无妄，先王以茂对时育万物。", modern: "无妄之灾须防范，行事纯正乃根本。事业方面脚踏实地，莫存侥幸；感情方面真诚相待，莫弄虚作假；决策时正直行事，不走旁门左道。" },
+  "100111": { name: "山天大畜", classical: "利贞，不家食，吉，利涉大川。天在山中，大畜，君子以多识前言往行，以畜其德。", modern: "大力蓄积，厚积薄发。事业方面广积经验与资源，蓄势待发；感情方面深情厚意，经得起时间考验；决策时充分准备，时机成熟一击即中。" },
+  "100001": { name: "山雷颐", classical: "贞吉，观颐，自求口实。山下有雷，颐，君子以慎言语，节饮食。", modern: "颐养之道，适度为宜。事业方面注重自身修养，量力而行；感情方面关心对方身心健康；决策时节制适度，勿贪多嚼不烂。" },
+  "011110": { name: "泽风大过", classical: "栋桡，利有攸往，亨。泽灭木，大过，君子以独立不惧，遁世无闷。", modern: "超越常规，非常之举。事业方面面临重大挑战，需超常发挥；感情方面情况特殊，需格外用心；决策时处于非常局面，需有非常之策。" },
+  "010010": { name: "坎为水", classical: "有孚，维心亨，行有尚。水洊至，习坎，君子以常德行，习教事。", modern: "重重险阻，有信者方能渡过。事业方面遭遇重重困难，坚守信念必能突破；感情方面波折重重，诚信为本；决策时守正应变，险中求胜。" },
+  "101101": { name: "离为火", classical: "利贞，亨，畜牝牛，吉。明两作，离，大人以继明照于四方。", modern: "光明文明，附丽之象。事业方面光明磊落，才华得以展现；感情方面热情似火，感情炽烈；决策时明智清醒，照亮前路。" },
+  "011100": { name: "泽山咸", classical: "亨利贞，取女吉。山上有泽，咸，君子以虚受人。", modern: "感应相通，情感共鸣。事业方面以诚心感召他人，合作愉快；感情方面心有灵犀，缘分天定；决策时感召力强，号令有方。" },
+  "001110": { name: "雷风恒", classical: "亨，无咎，利贞，利有攸往。雷风，恒，君子以立不易方。", modern: "恒久坚持，持之以恒。事业方面坚持不懈，功到自然成；感情方面专一忠诚，天长地久；决策时坚定方向，矢志不渝。" },
+  "111100": { name: "天山遁", classical: "亨，小利贞。天下有山，遁，君子以远小人，不恶而严。", modern: "退隐避世，明哲保身。事业方面适时退让，保存实力；感情方面若缘分未到，不强求；决策时知退则退，以退为进。" },
+  "001111": { name: "雷天大壮", classical: "利贞。雷在天上，大壮，君子以非礼勿履。", modern: "阳刚壮盛，雄壮威武。事业方面正值壮年，大展宏图；感情方面热情洋溢，积极表达；决策时刚健有力，勇于行动，但须合乎礼义。" },
+  "101000": { name: "火地晋", classical: "康侯用锡马蕃庶，昼日三接。明出地上，晋，君子以自昭明德。", modern: "晋升进步，前途光明。事业方面仕途顺遂，节节高升；感情方面感情进展顺利，修成正果；决策时把握机遇，积极进取。" },
+  "000101": { name: "地火明夷", classical: "利艰贞。明入地中，明夷，君子以莅众，用晦而明。", modern: "光明受损，韬光养晦。事业方面处于逆境，宜隐忍蓄力；感情方面遭受误解，以时间证明自己；决策时收敛锋芒，积聚力量等待时机。" },
+  "110101": { name: "风火家人", classical: "利女贞。风自火出，家人，君子以言有物而行有恒。", modern: "家庭和睦，各司其职。事业方面团队如家人，分工合作；感情方面家庭关系和谐，相互扶持；决策时从家庭出发，齐心协力。" },
+  "101011": { name: "火泽睽", classical: "小事吉。上火下泽，睽，君子以同而异。", modern: "背离相违，求同存异。事业方面意见相左，寻求共识；感情方面差异明显，包容接纳；决策时在分歧中找到平衡点。" },
+  "010100": { name: "水山蹇", classical: "利西南，不利东北，利见大人，贞吉。山上有水，蹇，君子以反身修德。", modern: "艰难险阻，自省修德。事业方面遭遇重重阻碍，回头审视自身；感情方面困难重重，内外兼修；决策时反求诸己，改变方法。" },
+  "001010": { name: "雷水解", classical: "利西南，无所往，其来复吉，有攸往，夙吉。雷雨作，解，君子以赦过宥罪。", modern: "解除困难，春雷惊醒。事业方面困境开始化解，新机遇来临；感情方面矛盾得以化解，重归于好；决策时抓住解困时机，迅速行动。" },
+  "100011": { name: "山泽损", classical: "有孚，元吉，无咎，可贞，利有攸往，曷之用，二簋可用享。", modern: "损己益人，舍得之道。事业方面有所付出方有所得；感情方面为对方付出，真情可贵；决策时有所舍弃，方能有所获得。" },
+  "110001": { name: "风雷益", classical: "利有攸往，利涉大川。风雷，益，君子以见善则迁，有过则改。", modern: "增益获利，与人方便。事业方面获得贵人相助，利益增长；感情方面互相滋养，共同成长；决策时广结善缘，利他利己。" },
+  "011111": { name: "泽天夬", classical: "扬于王庭，孚号有厉，告自邑，不利即戎，利有攸往。", modern: "决断斩除，刚决前行。事业方面当机立断，排除障碍；感情方面面对问题须果断处理；决策时以正压邪，刚健决断。" },
+  "111110": { name: "天风姤", classical: "女壮，勿用取女。天下有风，姤，后以施命诰四方。", modern: "邂逅相遇，机缘来临。事业方面奇遇机缘，把握偶然机会；感情方面意外邂逅，缘分天注定；决策时善待偶遇机缘，顺势而为。" },
+  "011000": { name: "泽地萃", classical: "亨，王假有庙，利见大人亨，利贞，用大牲吉，利有攸往。", modern: "聚合汇集，众志成城。事业方面广聚人才资源，合力成事；感情方面情感凝聚，感情升温；决策时凝聚人心，共同奋进。" },
+  "000110": { name: "地风升", classical: "元亨，用见大人，勿恤，南征吉。地中生木，升，君子以顺德，积小以高大。", modern: "步步高升，循序渐进。事业方面稳步晋升，积累资历；感情方面感情稳步发展，水到渠成；决策时循序渐进，稳中求升。" },
+  "011010": { name: "泽水困", classical: "亨，贞大人吉，无咎，有言不信。泽无水，困，君子以致命遂志。", modern: "困厄之中，坚守志向。事业方面处于困境，坚守信念不放弃；感情方面低谷期需彼此扶持；决策时困而不馁，坚定意志。" },
+  "010110": { name: "水风井", classical: "改邑不改井，无丧无得，往来井井。木上有水，井，君子以劳民劝相。", modern: "滋养万物，功德无量。事业方面默默奉献，深耕细作；感情方面如井水清澈，真情长久；决策时坚守本位，持续发挥价值。" },
+  "011101": { name: "泽火革", classical: "己日乃孚，元亨利贞，悔亡。泽中有火，革，君子以治历明时。", modern: "革故鼎新，变革时代。事业方面大胆改革，推陈出新；感情方面打破旧模式，开创新局面；决策时把握变革时机，勇于创新。" },
+  "101110": { name: "火风鼎", classical: "元吉亨。木上有火，鼎，君子以正位凝命。", modern: "鼎立稳固，革新成就。事业方面地位稳固，成就显著；感情方面关系稳定，可谋长远；决策时正位凝神，大功可成。" },
+  "001001": { name: "震为雷", classical: "亨，震来虩虩，笑言哑哑，震惊百里，不丧匕鬯。洊雷，震，君子以恐惧修省。", modern: "雷震惊天，奋发振作。事业方面受到震动与启示，奋起直追；感情方面感情如雷电，激情四射；决策时在震动中保持冷静，转危为机。" },
+  "100100": { name: "艮为山", classical: "艮其背，不获其身，行其庭，不见其人，无咎。兼山，艮，君子以思不出其位。", modern: "静止安定，守其位分。事业方面安分守己，踏实工作；感情方面不急不躁，稳定持守；决策时静观其变，不贸然行事。" },
+  "110100": { name: "风山渐", classical: "女归吉，利贞。山上有木，渐，君子以居贤德善俗。", modern: "渐进发展，循序渐进。事业方面循序渐进，稳步向前；感情方面感情渐进发展，水到渠成；决策时戒急用忍，按部就班。" },
+  "001011": { name: "雷泽归妹", classical: "征凶，无攸利。泽上有雷，归妹，君子以永终知敝。", modern: "婚嫁归宿，慎重为上。感情方面感情冲动，需冷静思考；事业方面不宜冒进，循规蹈矩；决策时谨慎权衡，勿感情用事。" },
+  "001101": { name: "雷火丰", classical: "亨，王假之，勿忧，宜日中。雷电皆至，丰，君子以折狱致刑。", modern: "丰盛充实，正值鼎盛。事业方面丰收在望，事业旺盛；感情方面感情丰盈，美满幸福；决策时把握当下，乘势而上。" },
+  "101100": { name: "火山旅", classical: "小亨，旅贞吉。山上有火，旅，君子以明慎用刑，而不留狱。", modern: "旅途奔波，羁旅漂泊。事业方面处于变动期，四处奔波；感情方面聚少离多，需耐心维系；决策时谨慎行事，旅途中保持清醒。" },
+  "110110": { name: "巽为风", classical: "小亨，利有攸往，利见大人。随风，巽，君子以申命行事。", modern: "柔顺渗入，无孔不入。事业方面以柔克刚，润物细无声；感情方面温柔体贴，潜移默化；决策时以柔顺方式达成目标，不硬碰硬。" },
+  "011011": { name: "兑为泽", classical: "亨，利贞。丽泽，兑，君子以朋友讲习。", modern: "喜悦愉快，口才出众。事业方面善于沟通，广结朋友；感情方面喜悦温馨，甜蜜浪漫；决策时以愉悦心态待人处事，事半功倍。" },
+  "110010": { name: "风水涣", classical: "亨，王假有庙，利涉大川，利贞。风行水上，涣，先王以享于帝立庙。", modern: "涣散分离，重新凝聚。事业方面分散的力量需重新整合；感情方面疏远的关系可重新走近；决策时化整为零，再聚为整。" },
+  "010011": { name: "水泽节", classical: "亨，苦节不可贞。泽上有水，节，君子以制数度，议德行。", modern: "节制适度，有节有度。事业方面控制节奏，量力而行；感情方面适度表达，不走极端；决策时把握尺度，节制行事。" },
+  "110011": { name: "风泽中孚", classical: "豚鱼吉，利涉大川，利贞。泽上有风，中孚，君子以议狱缓死。", modern: "内心诚信，以诚感人。事业方面以诚信为本，赢得信任；感情方面真心实意，情感深厚；决策时出于公心，必能感动人心。" },
+  "001100": { name: "雷山小过", classical: "亨，利贞，可小事，不可大事，飞鸟遗之音，不宜上，宜下，大吉。", modern: "小有过失，宜小不宜大。事业方面从小事做起，不宜大动干戈；感情方面小节上多注意；决策时谨小慎微，小步前行。" },
+  "010101": { name: "水火既济", classical: "亨，小利贞，初吉终乱。水在火上，既济，君子以思患而豫防之。", modern: "事已完成，功德圆满。事业方面目标已达，及时总结巩固；感情方面修成正果，珍惜维护；决策时居安思危，防患于未然。" },
+  "101010": { name: "火水未济", classical: "亨，小狐汔济，濡其尾，无攸利。火在水上，未济，君子以慎辨物居方。", modern: "事未完成，继续努力。事业方面尚未成功，需坚持到底；感情方面感情未定，需继续努力；决策时慎始慎终，不可半途而废。" }
+};
+
+// 补全 64 卦（如有缺失，用占位数据填充）
+const ALL_HEXAGRAM_KEYS = [];
+for (let i = 0; i < 64; i++) {
+  ALL_HEXAGRAM_KEYS.push(i.toString(2).padStart(6, '0'));
+}
+ALL_HEXAGRAM_KEYS.forEach(k => {
+  if (!HEXAGRAMS[k]) {
+    const upper = k.slice(0, 3);
+    const lower = k.slice(3, 6);
+    const lTri = TRIGRAMS[lower] || { name: "?", meaning: "?" };
+    const uTri = TRIGRAMS[upper] || { name: "?", meaning: "?" };
+    HEXAGRAMS[k] = {
+      name: `${uTri.meaning}${lTri.meaning === uTri.meaning ? "为" + uTri.meaning : lTri.meaning}`,
+      classical: "此卦象天地阴阳相交，变化无穷，问事者宜静观其变，顺势而为，方可趋吉避凶。",
+      modern: "此卦释义待补全。总体而言，凡事宜守正持中，审时度势，勿急功近利，静待天时地利人和之机。"
+    };
+  }
+});
+
+// ============================================================
+// 状态变量
+// ============================================================
+let currentQuestion = '';
+let yaoResults = []; // 每爻: { coins: [0/1,0/1,0/1], type: 'laoYin'|'shaoYang'|'shaoYin'|'laoYang', value: 0|1, moving: bool }
+let isSpinning = false;
+
+const YAO_NAMES = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'];
+
+// ============================================================
+// 阶段一
+// ============================================================
+document.getElementById('questionInput').addEventListener('input', function() {
+  document.getElementById('btnStart').disabled = this.value.trim().length === 0;
+});
+
+function startDivination() {
+  currentQuestion = document.getElementById('questionInput').value.trim();
+  yaoResults = [];
+  document.getElementById('yaoLogBody').innerHTML = '';
+  updateTossCounter();
+  showPage('page-toss');
+}
+
+// ============================================================
+// 阶段二：摇卦逻辑
+// ============================================================
+function updateTossCounter() {
+  const idx = yaoResults.length;
+  const el = document.getElementById('tossCounter');
+  if (idx >= 6) {
+    el.textContent = '六爻已成，卦象凝聚中…';
+  } else {
+    el.textContent = `第 ${idx + 1} 爻（${YAO_NAMES[idx]}）· 点击铜钱摇卦`;
+  }
+}
+
+function tossCoins() {
+  if (isSpinning || yaoResults.length >= 6) return;
+  isSpinning = true;
+  document.getElementById('btnToss').disabled = true;
+  document.getElementById('coinsArea').style.pointerEvents = 'none';
+
+  // 随机结果
+  const coins = [Math.random() < 0.5 ? 1 : 0,
+                 Math.random() < 0.5 ? 1 : 0,
+                 Math.random() < 0.5 ? 1 : 0];
+  const headsCount = coins.reduce((a, b) => a + b, 0);
+
+  let type, value, moving;
+  if (headsCount === 3) { type = 'laoYang';  value = 1; moving = true; }
+  else if (headsCount === 2) { type = 'shaoYin';  value = 0; moving = false; }
+  else if (headsCount === 1) { type = 'shaoYang'; value = 1; moving = false; }
+  else { type = 'laoYin';   value = 0; moving = true; }
+
+  // 动画
+  for (let i = 0; i < 3; i++) {
+    const coin = document.getElementById(`coin${i}`);
+    // 正面 = rotateY(0), 背面 = rotateY(180deg)
+    const finalRot = coins[i] === 1
+      ? 720 + (Math.random() < 0.5 ? 0 : 360)
+      : 900 + (Math.random() < 0.5 ? 0 : 360);
+    coin.style.setProperty('--final-rotate', finalRot + 'deg');
+    coin.classList.remove('spinning');
+    void coin.offsetWidth;
+    coin.classList.add('spinning');
+  }
+
+  setTimeout(() => {
+    // 固定最终状态
+    for (let i = 0; i < 3; i++) {
+      const coin = document.getElementById(`coin${i}`);
+      coin.classList.remove('spinning');
+      coin.style.transform = coins[i] === 1 ? 'rotateY(0deg)' : 'rotateY(180deg)';
+    }
+
+    const yaoData = { coins, type, value, moving };
+    yaoResults.push(yaoData);
+    appendYaoLog(yaoData, yaoResults.length - 1);
+    updateTossCounter();
+
+    isSpinning = false;
+    document.getElementById('btnToss').disabled = false;
+    document.getElementById('coinsArea').style.pointerEvents = 'auto';
+
+    // 重置铜钱显示
+    setTimeout(() => {
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`coin${i}`).style.transform = '';
+      }
+    }, 400);
+
+    if (yaoResults.length === 6) {
+      document.getElementById('btnToss').disabled = true;
+      setTimeout(finishToss, 800);
+    }
+  }, 1600);
+}
+
+const typeLabels = {
+  laoYang:  '老阳 ○',
+  shaoYin:  '少阴',
+  shaoYang: '少阳',
+  laoYin:   '老阴 ×'
+};
+
+function appendYaoLog(yao, idx) {
+  const div = document.createElement('div');
+  div.className = 'yao-item';
+
+  const dotsHtml = yao.coins.map(c =>
+    `<div class="coin-dot ${c === 1 ? 'heads' : ''}">${c === 1 ? '字' : '背'}</div>`
+  ).join('');
+
+  const lineHtml = yao.value === 1
+    ? `<div class="line-solid" style="width:60px;height:4px;background:var(--ink);border-radius:2px;"></div>`
+    : `<div style="display:flex;gap:6px;"><div class="line-broken-left" style="width:24px;height:4px;background:var(--ink);border-radius:2px;"></div><div class="line-broken-right" style="width:24px;height:4px;background:var(--ink);border-radius:2px;"></div></div>`;
+
+  div.innerHTML = `
+    <div class="yao-name">${YAO_NAMES[idx]}</div>
+    <div class="coin-dots">${dotsHtml}</div>
+    <div class="yao-type" style="color:${yao.moving ? 'var(--red)' : 'var(--light-ink)'}">${typeLabels[yao.type]}</div>
+    <div class="yao-line-preview">${lineHtml}</div>
+  `;
+  document.getElementById('yaoLogBody').appendChild(div);
+}
+
+function finishToss() {
+  const overlay = document.getElementById('transitionOverlay');
+  overlay.classList.add('active');
+  setTimeout(() => {
+    buildAndRenderResult();
+    showPage('page-result');
+    setTimeout(() => overlay.classList.remove('active'), 600);
+  }, 1000);
+}
+
+// ============================================================
+// 六爻逻辑
+// ============================================================
+function buildHexagram() {
+  // yaoResults[0] = 初爻（最下）, [5] = 上爻（最上）
+  // 本卦 key: 从上爻到初爻的顺序（高位到低位）
+  const benKey = yaoResults.map(y => y.value).reverse().join('');
+
+  // 变卦：动爻取反
+  const bianValues = yaoResults.map(y => y.moving ? (y.value === 1 ? 0 : 1) : y.value);
+  const bianKey = bianValues.reverse().join('');
+  const hasMoving = yaoResults.some(y => y.moving);
+
+  return { benKey, bianKey, hasMoving };
+}
+
+function lookupGua(key) {
+  return HEXAGRAMS[key] || {
+    name: "未知卦",
+    classical: "此卦玄妙，难以言说。",
+    modern: "请静心思量。"
+  };
+}
+
+function getTrigrams(key) {
+  // key 是6位，高3位是上卦，低3位是下卦
+  const upper = key.slice(0, 3);
+  const lower = key.slice(3, 6);
+  return {
+    upper: TRIGRAMS[upper] || { name: "?", symbol: "?", meaning: "?" },
+    lower: TRIGRAMS[lower] || { name: "?", symbol: "?", meaning: "?" }
+  };
+}
+
+// ============================================================
+// 渲染结果
+// ============================================================
+function buildAndRenderResult() {
+  const { benKey, bianKey, hasMoving } = buildHexagram();
+  const benGua = lookupGua(benKey);
+  const bianGua = lookupGua(bianKey);
+  const benTri = getTrigrams(benKey);
+  const bianTri = getTrigrams(bianKey);
+
+  // 问题
+  document.getElementById('resultQuestion').innerHTML =
+    `﹁${currentQuestion}﹂`;
+
+  // 卦象行
+  const row = document.getElementById('hexagramsRow');
+  row.innerHTML = '';
+
+  // 渲染本卦
+  row.appendChild(renderHexagramCard('本　卦', benKey, benGua, benTri, true));
+
+  // 如有变卦
+  if (hasMoving) {
+    const arrow = document.createElement('div');
+    arrow.style.cssText = 'display:flex;align-items:center;font-size:24px;color:var(--gold);align-self:center;';
+    arrow.textContent = '→';
+    row.appendChild(arrow);
+    row.appendChild(renderHexagramCard('变　卦', bianKey, bianGua, bianTri, false));
+  }
+
+  // 卦辞
+  const textSection = document.getElementById('guaTextSection');
+  textSection.innerHTML = `
+    <div class="gua-section-title">— 卦　辞 —</div>
+    <div class="gua-classical">${benGua.classical}</div>
+    <div class="gua-section-title" style="margin-top:16px;">— 白话释义 —</div>
+    <div class="gua-modern">${benGua.modern}</div>
+    ${hasMoving ? `<div class="gua-section-title" style="margin-top:16px;color:var(--red);">— 变卦提示 —</div>
+    <div class="gua-modern" style="color:var(--red);opacity:0.85;">卦中有动爻，事态将有变化。${bianGua.name}为变化之归宿：${bianGua.modern}</div>` : ''}
+  `;
+}
+
+function renderHexagramCard(label, key, gua, trigrams, isMain) {
+  const card = document.createElement('div');
+  card.className = 'hexagram-card';
+
+  // 爻线：从初爻(i=0)到上爻(i=5)依次添加到 DOM。
+  // CSS flex-direction: column-reverse 会将最后添加的(上爻)显示在顶部，初爻在底部，符合卦象传统。
+  let linesHtml = '';
+  for (let i = 0; i < 6; i++) {
+    const yao = isMain ? yaoResults[i] : null;
+    const val = parseInt(key[5 - i]);
+    const isMoving = isMain && yaoResults[i] && yaoResults[i].moving;
+
+    const delay = i * 150;
+    const lineGlyph = val === 1
+      ? `<div class="line-solid"></div>`
+      : `<div style="display:flex;gap:8px;align-items:center;"><div style="width:30px;height:5px;background:var(--ink);border-radius:2px;"></div><div style="width:30px;height:5px;background:var(--ink);border-radius:2px;"></div></div>`;
+
+    linesHtml += `
+      <div class="yao-line-row">
+        ${isMoving ? '<div class="moving-dot"></div>' : '<div style="width:9px;"></div>'}
+        <div class="yao-line-glyph" style="animation-delay:${delay}ms">${lineGlyph}</div>
+        ${isMoving ? '<div class="moving-dot"></div>' : '<div style="width:9px;"></div>'}
+      </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="hexagram-label">${label}</div>
+    <div class="hexagram-lines">${linesHtml}</div>
+    <div class="hexagram-name">${gua.name}</div>
+    <div class="hexagram-trigrams">${trigrams.upper.symbol} ${trigrams.upper.name}（${trigrams.upper.meaning}）上<br>${trigrams.lower.symbol} ${trigrams.lower.name}（${trigrams.lower.meaning}）下</div>
+  `;
+  return card;
+}
+
+// ============================================================
+// 页面切换
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function resetAll() {
+  document.getElementById('questionInput').value = '';
+  document.getElementById('btnStart').disabled = true;
+  yaoResults = [];
+  document.getElementById('yaoLogBody').innerHTML = '';
+  showPage('page-question');
+}
+</script>
+</body>
+</html>
